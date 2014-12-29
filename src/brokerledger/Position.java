@@ -14,6 +14,7 @@ public class Position {
     Symbol symbol;
     Integer positionSize;
     Double positionEntryPrice;
+    Double positionMTMPrice;
     Date positionDate;
     Double cost;
 
