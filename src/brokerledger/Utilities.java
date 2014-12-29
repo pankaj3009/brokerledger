@@ -56,6 +56,16 @@ public class Utilities {
         return exitCal.getTime();
     }
       
+    public static Date addSeconds(Date startDate, int seconds){
+        Calendar entryCal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"));
+        entryCal.setTime(startDate);
+        Calendar exitCal = (Calendar) entryCal.clone();
+        exitCal.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
+        
+        exitCal.add(Calendar.SECOND, seconds);
+        return exitCal.getTime();
+    }  
+    
     public static List<String> readAllLines(String inputfile, boolean header) {
         List<String> load=new ArrayList<>();
         File inputFile = new File(inputfile);

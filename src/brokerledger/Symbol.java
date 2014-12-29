@@ -20,8 +20,12 @@ public class Symbol {
         this.symbol = symbol;
         this.expiry = expiry;
         this.type = type;
+        if( !strike.equals("0")){
         this.strike = strike;
+        }
+        if(!right.equals("XX")){
         this.right = right;
+        }
     }
     
     

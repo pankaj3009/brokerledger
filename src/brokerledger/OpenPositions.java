@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.builder.DataPoint;
 import org.kairosdb.client.builder.QueryBuilder;
@@ -33,6 +35,7 @@ public class OpenPositions {
     double mtm;
     double todayPNL;
     double ledgerBalance;
+    private static final Logger logger = Logger.getLogger(OpenPositions.class.getName());
     
     
     public OpenPositions(Date endDate){
@@ -44,21 +47,35 @@ public class OpenPositions {
      * @param openingPosition
      * @param holidays 
      */
-    public OpenPositions(ArrayList<Position> openingPosition, ArrayList<Trade> trades, HashMap<String,BrokerMapping> mapping){
+    public OpenPositions(ArrayList<Position> openingPosition, ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping){
     //get max of openingPositionDate
         Date d=new Date(0);
+        if(openingPosition.size()>0){
         for(Position p:openingPosition){
             if(d.before(p.positionDate)){
                 d=p.positionDate;
             }
         }
-        positionClosingDate=Utilities.nextGoodDay(d);
+                positionClosingDate=Utilities.nextGoodDay(d);
+
+        }else{
+            for(Trade t:trades){
+                if(d.equals(new Date(0))){
+                    d=t.tradeDate;
+                }else{
+                    if(d.after(t.tradeDate)){
+                        d=t.tradeDate;
+                    }
+                }
+            }
+                    positionClosingDate=d;
+        }
        
         for(Trade t:trades){
             if (t.tradeDate.equals(positionClosingDate)){
                 Symbol s=mapping.get(t.symbol).symbol;
                 Position p=new Position();
-                p.symbol=s;
+                p.brokerSymbol=t.symbol;
                 p.positionSize=t.side.equals("Sell")?-Integer.valueOf(t.size):Integer.valueOf(t.size);
                 p.positionDate=t.tradeDate;
                 p.positionEntryPrice=Double.valueOf(t.price);
@@ -66,19 +83,21 @@ public class OpenPositions {
                 openingPosition.add(p);
             }
         }
-        double newmtm=calculatePositionMTM(openingPosition);
+        double newmtm=calculatePositionMTM(openingPosition,mapping);
         todayPNL=newmtm-mtm;
         mtm=newmtm;      
        
     }
     
-    public double calculatePositionMTM(ArrayList<Position> openingPosition){
+    public double calculatePositionMTM(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
         double mtm = 0D;
         for (Position p : openingPosition) {
             if (p.positionMTMPrice == 0) {
-                double mtmPrice = getSettlePrice(p.symbol, positionClosingDate);
+                Symbol s=mapping.get(p.brokerSymbol).symbol;
+                double mtmPrice = getSettlePrice(s, positionClosingDate);
                 for (Position p1 : openingPosition) {
-                    if (p1.symbol.equals(p.symbol)) {
+                    Symbol s1=mapping.get(p1.brokerSymbol).symbol;
+                    if (s1.equals(s)) {
                         p.positionMTMPrice = mtmPrice;
                     }
                 }
@@ -88,17 +107,18 @@ public class OpenPositions {
             double tempmtm=p.positionSize*(p.positionMTMPrice-p.positionEntryPrice);
             mtm=mtm+tempmtm;
         }
-        double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition);
+        double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
         ledgerBalance=ledgerBalance+mtm+ledgerMovement;
         return mtm;
         
         
     }
 
-    public double calculateLedgerCashFlowOnPurchaseSale(ArrayList<Position> openingPosition){
+    public double calculateLedgerCashFlowOnPurchaseSale(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping>mapping){
         double balance=0;
         for(Position p:openingPosition){
-            if (p.positionDate.equals(positionClosingDate) && p.symbol.strike!=null){
+            Symbol s=mapping.get(p.brokerSymbol).symbol;
+            if (p.positionDate.equals(positionClosingDate) && s.strike!=null){
                 balance=-p.positionSize*p.positionEntryPrice+balance;
             }
         }
@@ -112,13 +132,13 @@ public class OpenPositions {
          String metric ;
          switch(s.type){
              case "STK":
-                 metric="india.nse.equity.s2.daily.settle";
+                 metric="india.nse.equity.s4.daily.settle";
                  break;
              case "FUT":
-                 metric="india.nse.option.s2.daily.settle";
+                 metric="india.nse.future.s4.daily.settle";
                  break;
              case "OPT":
-                 metric="india.nse.option.s2.daily.settle";
+                 metric="india.nse.option.s4.daily.settle";
                  break;
              default:
                  metric=null;
@@ -128,13 +148,13 @@ public class OpenPositions {
                 Date endDate=d;
                 QueryBuilder builder = QueryBuilder.getInstance();
                 builder.setStart(d)
-                        .setEnd(d)
+                        .setEnd(Utilities.addSeconds(d, 1))
                         .addMetric(metric)
-                        .addTag("symbol", s.symbol);
-                if (!s.expiry.equals("")) {
+                        .addTag("symbol", s.symbol.toLowerCase());
+                if (s.expiry!=null) {
                     builder.getMetrics().get(0).addTag("expiry", s.expiry);
                 }
-                if (!s.right.equals("")) {
+                if (s.right!=null) {
                     builder.getMetrics().get(0).addTag("right", s.right);
                     builder.getMetrics().get(0).addTag("strike", s.strike);
                 }
@@ -151,7 +171,7 @@ public class OpenPositions {
                     settlePrice=Double.parseDouble(value.toString());
                 }  
          }catch (Exception e){
-             
+             logger.log(Level.INFO,null,e);
          }
         return settlePrice;
     }
