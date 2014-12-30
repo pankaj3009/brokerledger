@@ -85,7 +85,6 @@ public class OpenPositions {
         }
         SimpleDateFormat sdf=new SimpleDateFormat("yyyyMMdd");
         for(Position p:openingPosition){
-            logger.log(Level.INFO,p.brokerSymbol);
             Symbol s=mapping.get(p.brokerSymbol).symbol;
             Date symbolExpiry=null;
             try {
@@ -111,7 +110,6 @@ public class OpenPositions {
         for (Position p : openingPosition) {
             if (!p.mtmUpdated) {
                 Symbol s=mapping.get(p.brokerSymbol).symbol;
-                logger.log(Level.INFO,"Requesting Settle Price for {0} for date {1}",new Object[]{p.brokerSymbol,positionClosingDate});
                 double mtmPrice = getSettlePrice(s, positionClosingDate);
                 logger.log(Level.INFO,"Settle Price for {0} for date {1} = {2}",new Object[]{p.brokerSymbol,positionClosingDate,mtmPrice});
                 for (Position p1 : openingPosition) {
@@ -180,7 +178,7 @@ public class OpenPositions {
                     builder.getMetrics().get(0).addTag("expiry", s.expiry);
                 }
                 if (s.right!=null) {
-                    builder.getMetrics().get(0).addTag("right", s.right);
+                    builder.getMetrics().get(0).addTag("option", s.right);
                     builder.getMetrics().get(0).addTag("strike", s.strike);
                 }
 
