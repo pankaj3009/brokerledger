@@ -8,6 +8,7 @@ import com.google.common.collect.TreeMultimap;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -47,9 +48,9 @@ public class OpenPositions {
      * @param openingPosition
      * @param holidays 
      */
-    public OpenPositions(ArrayList<Position> openingPosition, ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping){
+    public OpenPositions(ArrayList<Position> openingPosition, ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping, Date lastProcessedDate){
     //get max of openingPositionDate
-        Date d=new Date(0);
+        Date d=lastProcessedDate==null?new Date(0):lastProcessedDate;
         if(openingPosition.size()>0){
         for(Position p:openingPosition){
             if(d.before(p.positionDate)){
@@ -73,16 +74,32 @@ public class OpenPositions {
        
         for(Trade t:trades){
             if (t.tradeDate.equals(positionClosingDate)){
-                Symbol s=mapping.get(t.symbol).symbol;
-                Position p=new Position();
+               Position p=new Position();
                 p.brokerSymbol=t.symbol;
-                p.positionSize=t.side.equals("Sell")?-Integer.valueOf(t.size):Integer.valueOf(t.size);
+                p.positionSize=t.size;
                 p.positionDate=t.tradeDate;
                 p.positionEntryPrice=Double.valueOf(t.price);
                 p.cost=Double.valueOf(t.serviceTax)+Double.valueOf(t.brokerage)+Double.valueOf(t.serviceTax);
                 openingPosition.add(p);
             }
         }
+        SimpleDateFormat sdf=new SimpleDateFormat("yyyyMMdd");
+        for(Position p:openingPosition){
+            logger.log(Level.INFO,p.brokerSymbol);
+            Symbol s=mapping.get(p.brokerSymbol).symbol;
+            Date symbolExpiry=null;
+            try {
+                symbolExpiry = sdf.parse(s.expiry);
+            } catch (ParseException ex) {
+                Logger.getLogger(OpenPositions.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if(symbolExpiry.after(positionClosingDate)){
+                p.mtmUpdated=false;
+                
+            }
+        }
+        
+
         double newmtm=calculatePositionMTM(openingPosition,mapping);
         todayPNL=newmtm-mtm;
         mtm=newmtm;      
@@ -92,19 +109,27 @@ public class OpenPositions {
     public double calculatePositionMTM(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
         double mtm = 0D;
         for (Position p : openingPosition) {
-            if (p.positionMTMPrice == 0) {
+            if (!p.mtmUpdated) {
                 Symbol s=mapping.get(p.brokerSymbol).symbol;
+                logger.log(Level.INFO,"Requesting Settle Price for {0} for date {1}",new Object[]{p.brokerSymbol,positionClosingDate});
                 double mtmPrice = getSettlePrice(s, positionClosingDate);
+                logger.log(Level.INFO,"Settle Price for {0} for date {1} = {2}",new Object[]{p.brokerSymbol,positionClosingDate,mtmPrice});
                 for (Position p1 : openingPosition) {
                     Symbol s1=mapping.get(p1.brokerSymbol).symbol;
                     if (s1.equals(s)) {
-                        p.positionMTMPrice = mtmPrice;
+                        if(mtmPrice>=0){
+                        p1.positionMTMPrice = mtmPrice;
+                        p1.mtmUpdated=true;
+                   }else{
+                        p1.mtmUpdated=true;
+                        //logger.log(Level.INFO,"Updated MTM for {0},{1},{2}",new Object[]{p.brokerSymbol,p.positionSize,p.positionEntryPrice});
+                    }
                     }
                 }
             }
         }
         for (Position p:openingPosition){
-            double tempmtm=p.positionSize*(p.positionMTMPrice-p.positionEntryPrice);
+            double tempmtm=p.positionSize*(p.positionMTMPrice-p.positionEntryPrice)-p.cost;
             mtm=mtm+tempmtm;
         }
         double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
@@ -126,7 +151,7 @@ public class OpenPositions {
     }
     
     public double getSettlePrice(Symbol s, Date d) {
-         double settlePrice=0D;
+         double settlePrice=-1;
          try{
          HttpClient client = new HttpClient("http://192.187.112.162:8085");
          String metric ;

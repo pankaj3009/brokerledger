@@ -31,7 +31,7 @@ public class Trade implements ReaderWriterInterface {
     String executionTime;
     String side;
     String symbol;
-    String size;
+    int size;
     String price;
     String brokerage;
     String serviceTax;
@@ -55,7 +55,7 @@ public class Trade implements ReaderWriterInterface {
         this.executionTime = executionTime;
         this.side = side;
         this.symbol = symbol;
-        this.size = size;
+        this.size = Integer.valueOf(size);
         this.price = price;
         this.brokerage = brokerage;
         this.serviceTax = serviceTax;
@@ -80,7 +80,7 @@ public class Trade implements ReaderWriterInterface {
         this.executionTime = input[6];
         this.side = input[7];
         this.symbol = input[8];
-        this.size = input[9];
+        this.size = this.side.equals("Buy")?Integer.valueOf(input[9]):-Integer.valueOf(input[9]);
         this.price = input[10];
         this.brokerage = input[11];
         this.serviceTax = input[12];

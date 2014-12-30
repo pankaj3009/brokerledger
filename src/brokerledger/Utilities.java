@@ -4,9 +4,11 @@
  */
 package brokerledger;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,6 +30,7 @@ public class Utilities {
     
     
     static ArrayList<Calendar> holidays=new ArrayList<>();
+        public static String newline = System.getProperty("line.separator");
     
     public Utilities(String holidayFileName) throws FileNotFoundException{
         List<String> input=Utilities.readAllLines(holidayFileName, true);
@@ -65,6 +68,31 @@ public class Utilities {
         exitCal.add(Calendar.SECOND, seconds);
         return exitCal.getTime();
     }  
+    
+      public static void writeToFile(String filename, Date date,String content) {
+        try {
+            File dir = new File("logs");
+            File file = new File(dir, filename);
+
+            //if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+
+            //true = append file
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
+            SimpleDateFormat timeFormatter = new SimpleDateFormat("HH:mm:ss");
+            String dateString = dateFormatter.format(date);
+            String timeString = timeFormatter.format(new java.util.Date());
+            FileWriter fileWritter = new FileWriter(file, true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(dateString+","+content + newline);
+            bufferWritter.close();
+        } catch (IOException ex) {
+        }
+    }
+    
     
     public static List<String> readAllLines(String inputfile, boolean header) {
         List<String> load=new ArrayList<>();
