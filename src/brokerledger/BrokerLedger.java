@@ -64,16 +64,16 @@ public class BrokerLedger {
                 logger.log(Level.SEVERE, null, ex);
             }
         }
-        OpenPositions op=new OpenPositions(openingPosition,trades,mapping,null);
+        OpenPositions op=new OpenPositions(openingPosition,trades,mapping,null,openingLedger,0);
         openPositions.add(op);
         while(op.positionClosingDate.before(endDate)){
-         op=new OpenPositions(openingPosition,trades,mapping,op.positionClosingDate);
+         op=new OpenPositions(openingPosition,trades,mapping,op.positionClosingDate,op.ledgerBalance,op.mtm);
          logger.log(Level.INFO,"Generated MTM for {0}",new Object[]{op.positionClosingDate});
          openPositions.add(op);
         }
         //write mtm values to file
         for(OpenPositions p:openPositions){
-            Utilities.writeToFile("ledger.csv", p.positionClosingDate, p.ledgerBalance+","+p.mtm);
+            Utilities.writeToFile("ledger.csv", p.positionClosingDate, p.ledgerBalance+","+p.todayPNL);
         }
         
         }

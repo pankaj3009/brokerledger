@@ -78,8 +78,6 @@ public class Utilities {
             if (!file.exists()) {
                 file.createNewFile();
             }
-
-
             //true = append file
             SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
             SimpleDateFormat timeFormatter = new SimpleDateFormat("HH:mm:ss");

@@ -48,8 +48,10 @@ public class OpenPositions {
      * @param openingPosition
      * @param holidays 
      */
-    public OpenPositions(ArrayList<Position> openingPosition, ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping, Date lastProcessedDate){
+    public OpenPositions(ArrayList<Position> openingPosition, ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping, Date lastProcessedDate, double ledgerBalance, double ytdMTM){
     //get max of openingPositionDate
+        this.ledgerBalance=ledgerBalance;
+        this.mtm=ytdMTM;
         Date d=lastProcessedDate==null?new Date(0):lastProcessedDate;
         if(openingPosition.size()>0){
         for(Position p:openingPosition){
@@ -101,6 +103,8 @@ public class OpenPositions {
 
         double newmtm=calculatePositionMTM(openingPosition,mapping);
         todayPNL=newmtm-mtm;
+        double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
+        this.ledgerBalance=this.ledgerBalance+todayPNL+ledgerMovement;
         mtm=newmtm;      
        
     }
@@ -130,8 +134,6 @@ public class OpenPositions {
             double tempmtm=p.positionSize*(p.positionMTMPrice-p.positionEntryPrice)-p.cost;
             mtm=mtm+tempmtm;
         }
-        double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
-        ledgerBalance=ledgerBalance+mtm+ledgerMovement;
         return mtm;
         
         
