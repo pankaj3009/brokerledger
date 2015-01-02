@@ -81,7 +81,7 @@ public class OpenPositions {
                 p.positionSize=t.size;
                 p.positionDate=t.tradeDate;
                 p.positionEntryPrice=Double.valueOf(t.price);
-                p.cost=Double.valueOf(t.serviceTax)+Double.valueOf(t.brokerage)+Double.valueOf(t.serviceTax);
+                p.cost=Double.valueOf(t.serviceTax)+Double.valueOf(t.brokerage)+Double.valueOf(t.stt)+Double.valueOf(t.otherLevies);
                 openingPosition.add(p);
             }
         }
@@ -101,15 +101,15 @@ public class OpenPositions {
         }
         
 
-        double newmtm=calculatePositionMTM(openingPosition,mapping);
-        todayPNL=newmtm-mtm;
+        double futuresMTM=calculateFuturesMTM(openingPosition,mapping);
+        todayPNL=futuresMTM-mtm;
         double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
         this.ledgerBalance=this.ledgerBalance+todayPNL+ledgerMovement;
-        mtm=newmtm;      
+        mtm=futuresMTM;      
        
     }
     
-    public double calculatePositionMTM(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
+    public double calculateFuturesMTM(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
         double mtm = 0D;
         for (Position p : openingPosition) {
             if (!p.mtmUpdated) {
@@ -131,8 +131,12 @@ public class OpenPositions {
             }
         }
         for (Position p:openingPosition){
+            Symbol s=mapping.get(p.brokerSymbol).symbol;
+            if(s.right==null)
+            {//only calculate MTM for non-option trades
             double tempmtm=p.positionSize*(p.positionMTMPrice-p.positionEntryPrice)-p.cost;
             mtm=mtm+tempmtm;
+            }
         }
         return mtm;
         
@@ -144,7 +148,7 @@ public class OpenPositions {
         for(Position p:openingPosition){
             Symbol s=mapping.get(p.brokerSymbol).symbol;
             if (p.positionDate.equals(positionClosingDate) && s.strike!=null){
-                balance=-p.positionSize*p.positionEntryPrice+balance;
+                balance=-p.positionSize*p.positionEntryPrice+balance-p.cost;
             }
         }
         return balance;

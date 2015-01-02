@@ -19,66 +19,70 @@ import java.util.logging.Logger;
  */
 public class BrokerLedger {
 
-    static ArrayList<Position> openingPosition=new ArrayList<>();
-    static ArrayList<Trade> trades=new ArrayList<>();;
-    static HashMap<String, SymbolMapping> mapping=new HashMap<>();
+    static ArrayList<Position> openingPosition = new ArrayList<>();
+    static ArrayList<Trade> trades = new ArrayList<>();
+    static HashMap<String, SymbolMapping> mapping = new HashMap<>();
     static double openingLedger;
-    static HashMap<String, String> input=new HashMap<>();
+    static HashMap<String, String> input = new HashMap<>();
     static Date endDate;
-    static ArrayList<OpenPositions> openPositions=new ArrayList<>();
+    static ArrayList<OpenPositions> openPositions = new ArrayList<>();
     private static final Logger logger = Logger.getLogger(BrokerLedger.class.getName());
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args)  {
-        if (!(args.length == 3||args.length == 4||args.length == 5)) {
+    public static void main(String[] args) {
+        if (!(args.length == 3 || args.length == 4 || args.length == 5)) {
             usage();
         } else {
             for (int i = 0; i < args.length; i++) {
                 input.put(args[i].split("=")[0].toLowerCase(), args[i].split("=")[1].toLowerCase());
-            }            
-        
-        //initialize variables
-        new Trade().reader(input.get("trades").toString(), trades);
-        ArrayList <SymbolMapping> tempMapping=new ArrayList<>();
-        new SymbolMapping().reader(input.get("symbolmapping").toString(), tempMapping);
-        for(SymbolMapping sm:tempMapping){
-            mapping.put(sm.brokerSymbol, sm);
-        }
-        openingLedger=Double.valueOf(input.get("openingledger").toString());
-        if(input.get("openingpositions")==null){
-            openingPosition=new ArrayList<>();
-        }else{
-            new Position().reader(input.get("openingpositions").toString(), openingPosition);
-        }
-        
-        if(input.get("enddate")==null){
-            endDate=new Date();
-        }else{
-            SimpleDateFormat sdf=new SimpleDateFormat("yyyyMMdd");
-            try {
-                endDate=sdf.parse(input.get("enddate").toString());
-            } catch (ParseException ex) {
-                endDate=new Date();
-                logger.log(Level.SEVERE, null, ex);
+            }
+
+            //initialize variables
+            new Trade().reader(input.get("trades").toString(), trades);
+            ArrayList<SymbolMapping> tempMapping = new ArrayList<>();
+            new SymbolMapping().reader(input.get("symbolmapping").toString(), tempMapping);
+            for (SymbolMapping sm : tempMapping) {
+                mapping.put(sm.brokerSymbol, sm);
+            }
+            openingLedger = Double.valueOf(input.get("openingledger").toString());
+            if (input.get("openingpositions") == null) {
+                openingPosition = new ArrayList<>();
+            } else {
+                new Position().reader(input.get("openingpositions").toString(), openingPosition);
+            }
+
+            if (input.get("enddate") == null) {
+                endDate = new Date();
+            } else {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+                try {
+                    endDate = sdf.parse(input.get("enddate").toString());
+                } catch (ParseException ex) {
+                    endDate = new Date();
+                    logger.log(Level.SEVERE, null, ex);
+                }
+            }
+            OpenPositions op = new OpenPositions(openingPosition, trades, mapping, null, openingLedger, 0);
+            openPositions.add(op);
+            while (op.positionClosingDate.before(endDate)) {
+                op = new OpenPositions(openingPosition, trades, mapping, op.positionClosingDate, op.ledgerBalance, op.mtm);
+                logger.log(Level.INFO, "Generated MTM for {0}", new Object[]{op.positionClosingDate});
+                openPositions.add(op);
+            }
+            //write mtm values to file
+            Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "FutureMTM" + "," + "P&L Today");
+            Utilities.writeToFile("ledger.csv", new Date(), openingLedger + "," + 0 + "," + 0);
+
+            double lastLedgerBalance = openingLedger;
+            for (OpenPositions p : openPositions) {
+                double todayMovement = p.ledgerBalance - lastLedgerBalance;
+                Utilities.writeToFile("ledger.csv", p.positionClosingDate, p.ledgerBalance + "," + todayMovement);
+                lastLedgerBalance=p.ledgerBalance;
             }
         }
-        OpenPositions op=new OpenPositions(openingPosition,trades,mapping,null,openingLedger,0);
-        openPositions.add(op);
-        while(op.positionClosingDate.before(endDate)){
-         op=new OpenPositions(openingPosition,trades,mapping,op.positionClosingDate,op.ledgerBalance,op.mtm);
-         logger.log(Level.INFO,"Generated MTM for {0}",new Object[]{op.positionClosingDate});
-         openPositions.add(op);
-        }
-        //write mtm values to file
-        for(OpenPositions p:openPositions){
-            Utilities.writeToFile("ledger.csv", p.positionClosingDate, p.ledgerBalance+","+p.todayPNL);
-        }
-        
-        }
     }
-    
 
     static void usage() {
         System.out.println("Provide the following space seperated name=values combinations. The tool expects 3 or 4 combinations as below:");
@@ -87,6 +91,5 @@ public class BrokerLedger {
         System.out.println("Mandatory: trades=tradefilename.csv");
         System.out.println("Mandatory: symbolmapping=symbolmapping.csv");
         System.out.println("Mandatory: openingledger=value");
-        
     }
 }
