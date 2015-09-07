@@ -4,6 +4,10 @@
  */
 package brokerledger;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -11,6 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 /**
@@ -32,14 +37,18 @@ public class BrokerLedger {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         if (!(args.length == 3 || args.length == 4 || args.length == 5)) {
             usage();
         } else {
             for (int i = 0; i < args.length; i++) {
                 input.put(args[i].split("=")[0].toLowerCase(), args[i].split("=")[1].toLowerCase());
             }
-
+        FileInputStream configFile;
+        if (new File("logging.properties").exists()) {
+            configFile = new FileInputStream("logging.properties");
+            LogManager.getLogManager().readConfiguration(configFile);
+        }
             //initialize variables
             new Trade().reader(input.get("trades").toString(), trades);
             ArrayList<SymbolMapping> tempMapping = new ArrayList<>();
