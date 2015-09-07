@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 public class BrokerLedger {
 
     static ArrayList<Position> openingPosition = new ArrayList<>();
+    static ArrayList<Position> netPosition = new ArrayList<>();
     static ArrayList<Trade> trades = new ArrayList<>();
     static HashMap<String, SymbolMapping> mapping = new HashMap<>();
     static double openingLedger;
@@ -64,14 +65,16 @@ public class BrokerLedger {
                     logger.log(Level.SEVERE, null, ex);
                 }
             }
-            OpenPositions op = new OpenPositions(openingPosition, trades, mapping, null, openingLedger, 0);
+            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(),trades, mapping, null, openingLedger, 0);
             openPositions.add(op);
             while (op.positionClosingDate.before(endDate)) {
-                op = new OpenPositions(openingPosition, trades, mapping, op.positionClosingDate, op.ledgerBalance, op.mtm);
+                op = new OpenPositions(openingPosition, op.netPosition,trades, mapping, op.positionClosingDate, op.ledgerBalance, op.ymtm);
                 logger.log(Level.INFO, "Generated MTM for {0}", new Object[]{op.positionClosingDate});
                 openPositions.add(op);
+                
+                
             }
-            //write mtm values to file
+            //write ymtm values to file
             Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "FutureMTM" + "," + "P&L Today");
             Utilities.writeToFile("ledger.csv", new Date(), openingLedger + "," + 0 + "," + 0);
 
@@ -92,4 +95,52 @@ public class BrokerLedger {
         System.out.println("Mandatory: symbolmapping=symbolmapping.csv");
         System.out.println("Mandatory: openingledger=value");
     }
+    
+       static public ArrayList<Position> GetNetPosition(ArrayList<Position> openingPosition){
+        ArrayList<Position>out=new ArrayList<>();
+        for(Position p:openingPosition){
+            boolean positionFound=false;
+            for(Position pnet:out){
+                if(pnet.brokerSymbol.equals(p.brokerSymbol)){
+                    positionFound=true;
+                    if(Math.abs(pnet.positionSize)<Math.abs(pnet.positionSize+p.positionSize)){
+                        //trade on the same side as position
+                        pnet.positionEntryPrice=(pnet.positionSize*pnet.positionEntryPrice+p.positionSize*p.positionEntryPrice)/(pnet.positionSize+p.positionSize);
+                        //pnet.cost=pnet.cost+p.cost;
+                        pnet.positionSize=pnet.positionSize+p.positionSize;
+                        pnet.realizedpnl=pnet.realizedpnl-(p.cost);
+                    }else{
+                        int newPositionSize=pnet.positionSize+p.positionSize;
+                        if(newPositionSize==0){
+                            pnet.positionEntryPrice=0;
+                            pnet.cost=0;
+                            pnet.positionSize=0;
+                            pnet.realizedpnl=pnet.realizedpnl-p.cost;
+                        }else if(pnet.positionSize>0 && newPositionSize<0||pnet.positionSize<0 && newPositionSize>0){
+                            //new trade has reversed position
+                            pnet.realizedpnl=pnet.positionSize*(p.positionEntryPrice-pnet.positionEntryPrice)-p.cost;
+                            pnet.positionSize=newPositionSize;
+                        }else {
+                            //position reduced
+                            pnet.realizedpnl=p.positionSize*(pnet.positionEntryPrice-p.positionEntryPrice)-p.cost;
+                            pnet.positionSize=newPositionSize;
+                        }
+                    }
+                    
+                }
+            }
+            if(!positionFound){
+                Position p1=new Position();
+                p1.realizedpnl=-p.cost;
+                p1.brokerSymbol=p.brokerSymbol;
+                p1.positionEntryPrice=p.positionEntryPrice;
+                p1.positionSize=p.positionSize;
+                out.add(p1);
+                
+                
+            }
+        }
+        return out;
+    }
+
 }

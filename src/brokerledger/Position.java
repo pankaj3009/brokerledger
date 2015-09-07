@@ -32,6 +32,8 @@ public class Position implements ReaderWriterInterface {
     double cost;
     boolean mtmUpdated=false;
     private static final Logger logger = Logger.getLogger(Position.class.getName());
+    double realizedpnl;
+    double yrealizedpnl;
 
     public Position() {
     }

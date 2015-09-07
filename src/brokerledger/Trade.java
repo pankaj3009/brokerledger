@@ -89,7 +89,7 @@ public class Trade implements ReaderWriterInterface {
         this.netamount = input[15];
         }
         else{
-            System.out.println("Check trades input file. A row does not have 16 columns");
+            System.out.println("Check trades input file. Row with file="+input[0]+ " does not have 16 columns");
         }
     }
 
