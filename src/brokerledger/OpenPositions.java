@@ -111,7 +111,7 @@ public class OpenPositions {
         }
         for(Position p:this.netPosition){
             p.yrealizedpnl=p.realizedpnl;
-            p.realizedpnl=0;
+            p.mtmUpdated=false;
         }
         this.netPosition=GetNetPosition(openingPosition,mapping); 
         todayRealizedPNL=calculateRealizedPNL(this.netPosition,mapping);
@@ -120,8 +120,8 @@ public class OpenPositions {
         todayMTMPNL=futuresMTMToday-ymtm;
         double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
         this.ledgerBalance=this.ledgerBalance+todayMTMPNL+todayRealizedPNL+ledgerMovement;
-        ymtm=futuresMTMToday;
-       
+        
+        ymtm=futuresMTMToday;       
     }
     
     public ArrayList<Position> GetNetPosition(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
@@ -173,7 +173,8 @@ public class OpenPositions {
                 p1.brokerSymbol=p.brokerSymbol;
                 p1.positionEntryPrice=p.positionEntryPrice;
                 p1.positionSize=p.positionSize;
-                /*
+                logger.log(Level.INFO,"New Position. Date:{0},Symbol:{1},New PositionSize:{2},RealizedPNL:{3}",new Object[]{positionClosingDate,p1.brokerSymbol,p1.positionSize,p1.realizedpnl});
+                 /*
                 double cumRealized=0;
                 for(Position p2:this.netPosition){
                     if(p2.brokerSymbol.equals(p1.brokerSymbol)){
@@ -195,6 +196,7 @@ public class OpenPositions {
         double out=0;
           for (Position p : netPosition) {
               out=out+p.realizedpnl-p.yrealizedpnl;
+              logger.log(Level.INFO,"Realized PNL. Symbol:{0},RealizedPNLCumul:{1},RealizedPNLCumul Yesterday:{2},RealizedPNL:{3}",new Object[]{p.brokerSymbol,p.realizedpnl,p.yrealizedpnl,p.realizedpnl-p.yrealizedpnl});
           }      
         return out;
     }
@@ -241,7 +243,8 @@ public class OpenPositions {
                 balance=-p.positionSize*p.positionEntryPrice+balance-p.cost;
                 for(Position pnet:netPosition){
                     if(pnet.brokerSymbol.equals(p.brokerSymbol)&& !pnet.mtmUpdated){
-                        balance=balance-pnet.realizedpnl-pnet.yrealizedpnl;
+                        balance=balance-(pnet.realizedpnl-pnet.yrealizedpnl);
+                        logger.log(Level.INFO,"Cash Flow Adjusted. Symbol:{0},Adjustmentment:{1}",new Object[]{pnet.brokerSymbol,-(pnet.realizedpnl-pnet.yrealizedpnl)});
                         pnet.mtmUpdated=true;
                     }
                 }
