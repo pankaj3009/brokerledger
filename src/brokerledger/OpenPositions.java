@@ -37,6 +37,7 @@ public class OpenPositions {
     double todayMTMPNL;
     double todayRealizedPNL;
     double ledgerBalance;
+    Date endDate;
     private static final Logger logger = Logger.getLogger(OpenPositions.class.getName());
     
     
@@ -49,8 +50,9 @@ public class OpenPositions {
      * @param openingPosition
      * @param holidays 
      */
-    public OpenPositions(ArrayList<Position> openingPosition,ArrayList<Position> netPosition,ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping, Date lastProcessedDate, double ledgerBalance, double ytdMTM){
+    public OpenPositions(ArrayList<Position> openingPosition,ArrayList<Position> netPosition,ArrayList<Trade> trades, HashMap<String,SymbolMapping> mapping, Date lastProcessedDate, double ledgerBalance, double ytdMTM,Date endDate){
     //get max of openingPositionDate
+        this.endDate=endDate;
         this.ledgerBalance=ledgerBalance;
         this.ymtm=ytdMTM;
         this.netPosition=netPosition;
@@ -61,7 +63,7 @@ public class OpenPositions {
                 d=p.positionDate;
             }
         }
-                positionClosingDate=Utilities.nextGoodDay(d,trades);
+                positionClosingDate=Utilities.nextGoodDay(d,trades,this.endDate);
 
         }else{
             for(Trade t:trades){

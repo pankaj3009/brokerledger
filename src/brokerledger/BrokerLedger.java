@@ -74,10 +74,10 @@ public class BrokerLedger {
                     logger.log(Level.SEVERE, null, ex);
                 }
             }
-            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(), trades, mapping, null, openingLedger, 0);
+            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(), trades, mapping, null, openingLedger, 0,endDate);
             openPositions.add(op);
             while (op.positionClosingDate.before(endDate)) {
-                op = new OpenPositions(openingPosition, op.netPosition, trades, mapping, op.positionClosingDate, op.ledgerBalance, op.ymtm);
+                op = new OpenPositions(openingPosition, op.netPosition, trades, mapping, op.positionClosingDate, op.ledgerBalance, op.ymtm,endDate);
                 logger.log(Level.INFO, "Generated MTM for {0}", new Object[]{op.positionClosingDate});
                 openPositions.add(op);
             }

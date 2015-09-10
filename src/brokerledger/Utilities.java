@@ -44,7 +44,7 @@ public class Utilities {
         }
     }
         
-      public static Date nextGoodDay(Date startDate,ArrayList<Trade>trades) {
+      public static Date nextGoodDay(Date startDate,ArrayList<Trade>trades,Date enddate) {
         Calendar entryCal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"));
         entryCal.setTime(startDate);
         Calendar exitCal = (Calendar) entryCal.clone();
@@ -55,7 +55,7 @@ public class Utilities {
         //    exitCal.add(Calendar.SECOND, 1);
         //}
         //while(exitCal.get(Calendar.DAY_OF_WEEK) == 7 || exitCal.get(Calendar.DAY_OF_WEEK) == 1||holidays.contains(exitCal)){
-         while(!Utilities.contractNoteExists(exitCal.getTime(), trades)){
+         while( exitCal.getTime().compareTo(enddate)<=0 && !Utilities.contractNoteExists(exitCal.getTime(), trades)){
             exitCal.add(Calendar.DATE, 1);
         }
         return exitCal.getTime();
@@ -101,7 +101,7 @@ public class Utilities {
     }
     
     /**
-     * Returns negative if d1 is before d2.Returns positive if d1 is after d2
+     * Returns positive if d1 is after d2.Returns positive if d1 is after d2
      * @param d1
      * @param d2
      * @param format
