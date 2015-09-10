@@ -61,7 +61,7 @@ public class OpenPositions {
                 d=p.positionDate;
             }
         }
-                positionClosingDate=Utilities.nextGoodDay(d);
+                positionClosingDate=Utilities.nextGoodDay(d,trades);
 
         }else{
             for(Trade t:trades){

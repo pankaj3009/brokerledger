@@ -44,7 +44,7 @@ public class Utilities {
         }
     }
         
-      public static Date nextGoodDay(Date startDate) {
+      public static Date nextGoodDay(Date startDate,ArrayList<Trade>trades) {
         Calendar entryCal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"));
         entryCal.setTime(startDate);
         Calendar exitCal = (Calendar) entryCal.clone();
@@ -54,12 +54,22 @@ public class Utilities {
         //if(minuteAdjust==0){
         //    exitCal.add(Calendar.SECOND, 1);
         //}
-        while(exitCal.get(Calendar.DAY_OF_WEEK) == 7 || exitCal.get(Calendar.DAY_OF_WEEK) == 1||holidays.contains(exitCal)){
+        //while(exitCal.get(Calendar.DAY_OF_WEEK) == 7 || exitCal.get(Calendar.DAY_OF_WEEK) == 1||holidays.contains(exitCal)){
+         while(!Utilities.contractNoteExists(exitCal.getTime(), trades)){
             exitCal.add(Calendar.DATE, 1);
         }
         return exitCal.getTime();
     }
       
+      public static boolean contractNoteExists(Date date, ArrayList<Trade>trades){
+          String dt=Utilities.getDateString(date, "yyyyMMdd");
+          for(Trade t:trades){
+              if(t.fileName.contains(dt)){
+                  return true;
+              }
+          }
+          return false;
+      }
     public static Date addSeconds(Date startDate, int seconds){
         Calendar entryCal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"));
         entryCal.setTime(startDate);
