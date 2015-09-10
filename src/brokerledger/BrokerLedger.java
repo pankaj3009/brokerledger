@@ -84,7 +84,7 @@ public class BrokerLedger {
                 
             }
             //write ymtm values to file
-            Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "FutureMTM" + "," + "P&L Today");
+            Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "TodayMovement" + "," + "FuturesMTM");
             Utilities.writeToFile("ledger.csv", new Date(), openingLedger + "," + 0 + "," + 0);
 
             double lastLedgerBalance = openingLedger;

@@ -119,8 +119,7 @@ public class OpenPositions {
         double futuresMTMToday=calculateFuturesMTM(this.netPosition,mapping);
         todayMTMPNL=futuresMTMToday-ymtm;
         double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
-        this.ledgerBalance=this.ledgerBalance+todayMTMPNL+todayRealizedPNL+ledgerMovement;
-        
+        this.ledgerBalance=this.ledgerBalance+todayMTMPNL+todayRealizedPNL+ledgerMovement;        
         ymtm=futuresMTMToday;       
     }
     
@@ -201,14 +200,15 @@ public class OpenPositions {
         return out;
     }
     
-    public double calculateFuturesMTM(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
+    public double calculateFuturesMTM(ArrayList<Position> netPosition,HashMap<String,SymbolMapping> mapping){
         double mtm = 0D;
-        for (Position p : openingPosition) {
+        for (Position p : netPosition) {
             //if (!p.mtmUpdated) {
                 Symbol s=mapping.get(p.brokerSymbol).symbol;
+                if(s.expiry!=null && Utilities.dateCompare(s.expiry,positionClosingDate , "yyyyMMdd")>=0){                   
                 double mtmPrice = getSettlePrice(s, positionClosingDate);
                 logger.log(Level.INFO,"Settle Price for {0} for date {1} = {2}",new Object[]{p.brokerSymbol,positionClosingDate,mtmPrice});
-                for (Position p1 : openingPosition) {
+                for (Position p1 : netPosition) {
                     Symbol s1=mapping.get(p1.brokerSymbol).symbol;
                     if (s1.equals(s)) {
                         if(mtmPrice>=0){
@@ -220,9 +220,10 @@ public class OpenPositions {
                     }
                     }
                 }
+                }
             //}
         }
-        for (Position p:openingPosition){
+        for (Position p:netPosition){
             Symbol s=mapping.get(p.brokerSymbol).symbol;
             if(!(p.positionSize>0 && s.right!=null))
             {//only calculate MTM for option sales and futures

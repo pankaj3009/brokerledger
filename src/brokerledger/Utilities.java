@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -68,6 +69,41 @@ public class Utilities {
         exitCal.add(Calendar.SECOND, seconds);
         return exitCal.getTime();
     }  
+    
+    /**
+     * Returns negative if d1 is before d2.Returns positive if d1 is after d2
+     * @param d1
+     * @param d2
+     * @param format
+     * @return
+     * @throws ParseException 
+     */
+    public static int dateCompare(String d1,String d2,String format) throws ParseException{
+        SimpleDateFormat sdf=new SimpleDateFormat(format);
+        Date dd1=sdf.parse(d1);
+        Date dd2=sdf.parse(d2);
+        return dd1.compareTo(dd2);
+    }
+    
+    /**
+     * Returns negative if d1 is before d2.Returns positive if d1 is after d2
+     * @param d1
+     * @param d2
+     * @param format
+     * @return
+     * @throws ParseException 
+     */
+    public static int dateCompare(String d1,Date d2,String format)  {
+        
+            int out=0;
+        try {    SimpleDateFormat sdf=new SimpleDateFormat(format);
+            Date dd1=sdf.parse(d1);
+            out=dd1.compareTo(d2);
+        } catch (ParseException ex) {
+            Logger.getLogger(Utilities.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return out;
+    }
     
       public static void writeToFile(String filename, Date date,String content) {
         try {
