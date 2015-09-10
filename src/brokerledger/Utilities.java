@@ -70,6 +70,11 @@ public class Utilities {
         return exitCal.getTime();
     }  
     
+    public static String getDateString(Date date, String format){
+        SimpleDateFormat sdf=new SimpleDateFormat(format);
+        return sdf.format(date);
+    }
+    
     /**
      * Returns negative if d1 is before d2.Returns positive if d1 is after d2
      * @param d1
@@ -127,6 +132,23 @@ public class Utilities {
         }
     }
     
+    public static void writeToFile(String filename,String content) {
+        try {
+            File dir = new File("logs");
+            File file = new File(dir, filename);
+
+            //if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            //true = append file
+            FileWriter fileWritter = new FileWriter(file, true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(content + newline);
+            bufferWritter.close();
+        } catch (IOException ex) {
+        }
+    }
     
     public static List<String> readAllLines(String inputfile, boolean header) {
         List<String> load=new ArrayList<>();

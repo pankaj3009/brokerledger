@@ -74,35 +74,45 @@ public class BrokerLedger {
                     logger.log(Level.SEVERE, null, ex);
                 }
             }
-            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(),trades, mapping, null, openingLedger, 0);
+            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(), trades, mapping, null, openingLedger, 0);
             openPositions.add(op);
             while (op.positionClosingDate.before(endDate)) {
-                op = new OpenPositions(openingPosition, op.netPosition,trades, mapping, op.positionClosingDate, op.ledgerBalance, op.ymtm);
+                op = new OpenPositions(openingPosition, op.netPosition, trades, mapping, op.positionClosingDate, op.ledgerBalance, op.ymtm);
                 logger.log(Level.INFO, "Generated MTM for {0}", new Object[]{op.positionClosingDate});
                 openPositions.add(op);
-                
-                
             }
             //write ymtm values to file
-            Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "TodayMovement" + "," + "FuturesMTM");
+            Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "TodayMovement");
             Utilities.writeToFile("ledger.csv", new Date(), openingLedger + "," + 0 + "," + 0);
 
             double lastLedgerBalance = openingLedger;
             for (OpenPositions p : openPositions) {
                 double todayMovement = p.ledgerBalance - lastLedgerBalance;
                 Utilities.writeToFile("ledger.csv", p.positionClosingDate, p.ledgerBalance + "," + todayMovement);
-                lastLedgerBalance=p.ledgerBalance;
+                lastLedgerBalance = p.ledgerBalance;
+            }
+            ArrayList<Position> closingPosition = openPositions.get(openPositions.size() - 1).netPosition;
+            String closingPositionFileName = input.get("openingpositions").toString();
+            Date positionDate = openPositions.get(openPositions.size() - 1).positionClosingDate;
+            Utilities.writeToFile(closingPositionFileName, "BrokerSymbol,PositionSize,PositionEntryPrice,PositionMTMPrice,PositionDate,Cost");
+            for (Position p : closingPosition) {
+                Symbol s = mapping.get(p.brokerSymbol).symbol;
+                if (p.positionSize != 0 && (s.expiry != null && Utilities.dateCompare(s.expiry, positionDate, "ddddMMyy") > 0)) {
+                    Utilities.writeToFile(closingPositionFileName, p.brokerSymbol + "," + p.positionSize + "," + p.positionEntryPrice + "," + p.positionMTMPrice + "," + Utilities.getDateString(p.positionDate, "yyyyMMdd") + "," + p.cost);
+                }
             }
         }
     }
 
     static void usage() {
         System.out.println("Provide the following space seperated name=values combinations. The tool expects 3 or 4 combinations as below:");
-        System.out.println("Optional: openingpositions=openingpositions.csv");
+        System.out.println("Optional: openingpositions=openingposition.csv");
+        System.out.println("Mandatory: closingpositions=closingposition.csv");
         System.out.println("Optional: enddate=last calculate date in format yyyyMMdd");
         System.out.println("Mandatory: trades=tradefilename.csv");
         System.out.println("Mandatory: symbolmapping=symbolmapping.csv");
         System.out.println("Mandatory: openingledger=value");
+        
     }
     
        static public ArrayList<Position> GetNetPosition(ArrayList<Position> openingPosition){
