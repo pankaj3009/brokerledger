@@ -92,7 +92,7 @@ public class BrokerLedger {
                 lastLedgerBalance = p.ledgerBalance;
             }
             ArrayList<Position> closingPosition = openPositions.get(openPositions.size() - 1).netPosition;
-            String closingPositionFileName = input.get("openingpositions").toString();
+            String closingPositionFileName = input.get("closingpositions").toString();
             Date positionDate = openPositions.get(openPositions.size() - 1).positionClosingDate;
             Utilities.writeToFile(closingPositionFileName, "BrokerSymbol,PositionSize,PositionEntryPrice,PositionMTMPrice,PositionDate,Cost");
             for (Position p : closingPosition) {
