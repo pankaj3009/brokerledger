@@ -98,7 +98,7 @@ public class BrokerLedger {
             for (Position p : closingPosition) {
                 Symbol s = mapping.get(p.brokerSymbol).symbol;
                 if (p.positionSize != 0 && (s.expiry != null && Utilities.dateCompare(s.expiry, positionDate, "ddddMMyy") > 0)) {
-                    Utilities.writeToFile(closingPositionFileName, p.brokerSymbol + "," + p.positionSize + "," + p.positionEntryPrice + "," + p.positionMTMPrice + "," + Utilities.getDateString(p.positionDate, "yyyyMMdd") + "," + p.cost);
+                    Utilities.writeToFile(closingPositionFileName, p.brokerSymbol + "," + p.positionSize + "," + p.positionEntryPrice + "," + p.positionMTMPrice + "," + "," + "," + p.cost);
                 }
             }
         }
