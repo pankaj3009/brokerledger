@@ -38,7 +38,7 @@ public class BrokerLedger {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws FileNotFoundException, IOException {
-        if (!(args.length == 3 || args.length == 4 || args.length == 5)) {
+        if (!(args.length == 3 || args.length == 4 || args.length == 5||args.length == 6)) {
             usage();
         } else {
             for (int i = 0; i < args.length; i++) {
