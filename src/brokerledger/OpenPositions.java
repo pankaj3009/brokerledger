@@ -120,7 +120,17 @@ public class OpenPositions {
         todayMTMPNL=futuresMTMToday-ymtm;
         double ledgerMovement=calculateLedgerCashFlowOnPurchaseSale(openingPosition,mapping);
         this.ledgerBalance=this.ledgerBalance+todayMTMPNL+todayRealizedPNL+ledgerMovement;        
-        ymtm=futuresMTMToday;       
+        ymtm=futuresMTMToday;   
+        
+            String closingPositionFileName = BrokerLedger.input.get("closingpositions").toString();
+            Utilities.writeToFile(closingPositionFileName, "BrokerSymbol,PositionSize,PositionEntryPrice,PositionMTMPrice,PositionDate,Cost");
+            Date positionDate = positionClosingDate;
+            for (Position p : this.netPosition) {
+                Symbol s = mapping.get(p.brokerSymbol).symbol;
+                if (p.positionSize != 0 && (s.expiry != null && Utilities.dateCompare(s.expiry, positionDate, "ddddMMyy") > 0)) {
+                    Utilities.writeToFile(Utilities.getDateString(positionClosingDate,"yyyyMMdd")+"_"+ closingPositionFileName, p.brokerSymbol + "," + p.positionSize + "," + p.positionEntryPrice + "," + p.positionMTMPrice + "," + "," + p.cost);
+                }
+            }
     }
     
     public ArrayList<Position> GetNetPosition(ArrayList<Position> openingPosition,HashMap<String,SymbolMapping> mapping){
