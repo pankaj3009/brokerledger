@@ -1,0 +1,1 @@
+java -jar brokerledger.jar closingpositions=zd.closingposition.csv trades=zd.trades.2017.csv symbolmapping=zd.mapping.2017.csv openingledger=2083376.19 ledger=zd.ledger.2017.csv
