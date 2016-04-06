@@ -49,8 +49,9 @@ public class Utilities {
         entryCal.setTime(startDate);
         Calendar exitCal = (Calendar) entryCal.clone();
         exitCal.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
-        
+        if(exitCal.getTime().compareTo(enddate)<0){
         exitCal.add(Calendar.DATE, 1);
+      }
         //if(minuteAdjust==0){
         //    exitCal.add(Calendar.SECOND, 1);
         //}
@@ -175,5 +176,28 @@ public class Utilities {
     }
     return load;    
 }
-    
+        public static boolean isInteger(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        str = str.trim();
+        int length = str.length();
+        if (length == 0) {
+            return false;
+        }
+        int i = 0;
+        if (str.charAt(0) == '-') {
+            if (length == 1) {
+                return false;
+            }
+            i = 1;
+        }
+        for (; i < length; i++) {
+            char c = str.charAt(i);
+            if ((c <= '/' || c >= ':') && c != '.') {
+                return false;
+            }
+        }
+        return true;
+    }
 }

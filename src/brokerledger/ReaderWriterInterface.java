@@ -12,7 +12,7 @@ import java.util.ArrayList;
  */
 public interface ReaderWriterInterface {
     
-    public void reader(String inputfile, ArrayList target);
+    public void reader(String inputfile, ArrayList target,boolean removeFirstLine);
     public void writer (String fileName);
 }
 

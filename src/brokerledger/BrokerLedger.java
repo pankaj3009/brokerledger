@@ -8,9 +8,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -50,9 +54,9 @@ public class BrokerLedger {
             LogManager.getLogManager().readConfiguration(configFile);
         }
             //initialize variables
-            new Trade().reader(input.get("trades").toString(), trades);
+            new Trade().reader(input.get("trades").toString(), trades,true);
             ArrayList<SymbolMapping> tempMapping = new ArrayList<>();
-            new SymbolMapping().reader(input.get("symbolmapping").toString(), tempMapping);
+            new SymbolMapping().reader(input.get("symbolmapping").toString(), tempMapping,true);
             for (SymbolMapping sm : tempMapping) {
                 mapping.put(sm.brokerSymbol, sm);
             }
@@ -60,11 +64,12 @@ public class BrokerLedger {
             if (input.get("openingpositions") == null) {
                 openingPosition = new ArrayList<>();
             } else {
-                new Position().reader(input.get("openingpositions").toString(), openingPosition);
+                new Position().reader(input.get("openingpositions").toString(), openingPosition,true);
             }
 
             if (input.get("enddate") == null) {
-                endDate = new Date();
+                endDate = trades.get(trades.size()-1).tradeDate;
+                //endDate=Utilities.addSeconds(endDate, 1);
             } else {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
                 try {
@@ -74,21 +79,45 @@ public class BrokerLedger {
                     logger.log(Level.SEVERE, null, ex);
                 }
             }
-            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(), trades, mapping, null, openingLedger, 0,endDate);
+            
+            File logs=new File("logs");
+            File[]files=logs.listFiles();
+            Arrays.sort(files);
+            String lastProcessingDate="";
+            Date lastProcessedDate=new Date(0);
+            if(new File(logs,input.get("ledger")).exists()){
+                 List<String> ledger = Files.readAllLines(new File(logs,input.get("ledger")).toPath(), StandardCharsets.UTF_8);
+                 String[] lastProcessingRecord=ledger.get(ledger.size()-1).split(",");
+                 openingLedger=Double.valueOf(lastProcessingRecord[1]);
+                 String positionFileName=lastProcessingRecord[0]+"_"+input.get("closingpositions");
+                 openingPosition.clear();
+                 new Position().reader("logs"+"\\"+positionFileName, openingPosition,false);
+                 try{
+                 lastProcessedDate=new SimpleDateFormat("yyyyMMdd").parse(lastProcessingRecord[0]);
+                 }catch (Exception e){
+                     logger.log(Level.SEVERE,null,e);
+                 }
+                 
+             }
+            if(!lastProcessedDate.equals(endDate)){
+            OpenPositions op = new OpenPositions(openingPosition, new ArrayList<Position>(), trades, mapping, lastProcessedDate, openingLedger, 0,endDate);
             openPositions.add(op);
+            
             while (op.positionClosingDate.before(endDate)) {
                 op = new OpenPositions(openingPosition, op.netPosition, trades, mapping, op.positionClosingDate, op.ledgerBalance, op.ymtm,endDate);
                 logger.log(Level.INFO, "Generated MTM for {0}", new Object[]{op.positionClosingDate});
                 openPositions.add(op);
             }
-            //write ymtm values to file
-            Utilities.writeToFile("ledger.csv", new Date(), "Ledger Balance" + "," + "TodayMovement");
-            Utilities.writeToFile("ledger.csv", new Date(), openingLedger + "," + 0 + "," + 0);
-
+            
+                File f=new File("logs",input.get("ledger"));
+                if (!f.exists()){
+            Utilities.writeToFile(input.get("ledger"), new Date(), "Ledger Balance" + "," + "TodayMovement");
+            Utilities.writeToFile(input.get("ledger"), new Date(0), openingLedger + "," + 0 + "," + 0);
+            }
             double lastLedgerBalance = openingLedger;
             for (OpenPositions p : openPositions) {
                 double todayMovement = p.ledgerBalance - lastLedgerBalance;
-                Utilities.writeToFile("ledger.csv", p.positionClosingDate, p.ledgerBalance + "," + todayMovement);
+                Utilities.writeToFile(input.get("ledger"), p.positionClosingDate, p.ledgerBalance + "," + todayMovement);
                 lastLedgerBalance = p.ledgerBalance;
             }
             ArrayList<Position> closingPosition = openPositions.get(openPositions.size() - 1).netPosition;
@@ -100,6 +129,7 @@ public class BrokerLedger {
                 if (p.positionSize != 0 && (s.expiry != null && Utilities.dateCompare(s.expiry, positionDate, "ddddMMyy") > 0)) {
                     Utilities.writeToFile(closingPositionFileName, p.brokerSymbol + "," + p.positionSize + "," + p.positionEntryPrice + "," + p.positionMTMPrice + "," + "," + "," + p.cost);
                 }
+            }
             }
         }
     }

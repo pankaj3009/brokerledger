@@ -94,12 +94,14 @@ public class Trade implements ReaderWriterInterface {
     }
 
     @Override
-    public void reader(String inputfile, ArrayList target) {
+    public void reader(String inputfile, ArrayList target,boolean removeFirstLine) {
                File inputFile = new File(inputfile);
         if (inputFile.exists() && !inputFile.isDirectory()) {
             try {
                 List<String> existingFileLoad = Files.readAllLines(Paths.get(inputfile), StandardCharsets.UTF_8);
+                if(removeFirstLine){
                 existingFileLoad.remove(0);
+                }
                 for (String s : existingFileLoad) {
                     if (!s.equals("")) {
                         String[] input = s.split(",");
