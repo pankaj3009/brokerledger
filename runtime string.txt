@@ -1,0 +1,2 @@
+openingpositions=ib.openingposition.csv closingpositions=ib.closingposition.csv trades=ib.2016.csv symbolmapping=ib.mapping.csv openingledger=179745.75 enddate=20160331
+openingpositions=zd.openingposition.csv closingpositions=zd.closingposition.csv trades=zd.2016.csv symbolmapping=zd.mapping.csv openingledger=179745.75 enddate=20160331

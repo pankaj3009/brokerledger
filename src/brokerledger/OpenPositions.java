@@ -269,7 +269,7 @@ public class OpenPositions {
     public double getSettlePrice(Symbol s, Date d) {
          double settlePrice=-1;
          try{
-         HttpClient client = new HttpClient("http://192.187.112.162:8085");
+         HttpClient client = new HttpClient("http://127.0.0.1:8085");
          String metric ;
          switch(s.type){
              case "STK":
