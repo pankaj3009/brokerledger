@@ -4,19 +4,12 @@
  */
 package brokerledger;
 
-import com.google.common.collect.TreeMultimap;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.kairosdb.client.HttpClient;
@@ -239,10 +232,21 @@ public class OpenPositions {
         }
         for (Position p : netPosition) {
             Symbol s = mapping.get(p.brokerSymbol).symbol;
-            if (!(p.positionSize > 0 && s.right != null)) {//only calculate MTM for option sales and futures
-                double tempmtm = p.positionSize * (p.positionMTMPrice - p.positionEntryPrice) - p.cost;
-                mtm = mtm + tempmtm;
+            switch (BrokerLedger.input.get("soldoptionmtm")) {
+                case "no":
+                    if (s.right == null) {
+                        double tempmtm = p.positionSize * (p.positionMTMPrice - p.positionEntryPrice) - p.cost;
+                        mtm = mtm + tempmtm;
+                    }
+                    break;
+                default:
+                    if (!(p.positionSize > 0 && s.right != null)) {//only calculate MTM for option sales and futures
+                        double tempmtm = p.positionSize * (p.positionMTMPrice - p.positionEntryPrice) - p.cost;
+                        mtm = mtm + tempmtm;
+                    }
+                    break;
             }
+
         }
         return mtm;
 
